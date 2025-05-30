@@ -1,102 +1,163 @@
-import streamlit as st
+import pygame
 import random
-import time
+from pygame.locals import *
 
-# Grid size
-GRID_SIZE = 10
+# Constants
+SIZE = 40
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 800
+RESOURCE_PATH = "/Users/puruyadav1004/Desktop/snake game project/resource"
 
-# Emoji representations
-SNAKE_EMOJI = "🟩"
-FOOD_EMOJI = "🍎"
-EMPTY_EMOJI = "⬜"
+class Apple:
+    def __init__(self, parent_screen):
+        self.parent_screen = parent_screen
+        image = pygame.image.load(f"{RESOURCE_PATH}/apple.jpg").convert_alpha()
+        self.image = pygame.transform.scale(image, (SIZE, SIZE))
+        self.x = SIZE * 3
+        self.y = SIZE * 3
 
-# Initialize state
-if "snake" not in st.session_state:
-    st.session_state.snake = [(5, 5)]
-    st.session_state.food = (random.randint(0, GRID_SIZE-1), random.randint(0, GRID_SIZE-1))
-    st.session_state.direction = "RIGHT"
-    st.session_state.score = 0
-    st.session_state.game_over = False
+    def draw(self):
+        self.parent_screen.blit(self.image, (self.x, self.y))
 
-def place_food():
-    while True:
-        food = (random.randint(0, GRID_SIZE-1), random.randint(0, GRID_SIZE-1))
-        if food not in st.session_state.snake:
-            return food
+    def move(self, snake_coords):
+        while True:
+            self.x = random.randint(0, (SCREEN_WIDTH - SIZE) // SIZE) * SIZE
+            self.y = random.randint(0, (SCREEN_HEIGHT - SIZE) // SIZE) * SIZE
+            if (self.x, self.y) not in snake_coords:
+                break
 
-def move_snake():
-    head_x, head_y = st.session_state.snake[-1]
+class Snake:
+    def __init__(self, parent_screen):
+        self.parent_screen = parent_screen
+        image = pygame.image.load(f"{RESOURCE_PATH}/block.jpg").convert()
+        self.image = pygame.transform.scale(image, (SIZE, SIZE))
+        self.direction = 'down'
+        self.length = 1
+        self.x = [SIZE]
+        self.y = [SIZE]
 
-    direction = st.session_state.direction
-    if direction == "UP":
-        new_head = (head_x, head_y - 1)
-    elif direction == "DOWN":
-        new_head = (head_x, head_y + 1)
-    elif direction == "LEFT":
-        new_head = (head_x - 1, head_y)
-    else:  # RIGHT
-        new_head = (head_x + 1, head_y)
+    def move_left(self): self.direction = 'left'
+    def move_right(self): self.direction = 'right'
+    def move_up(self): self.direction = 'up'
+    def move_down(self): self.direction = 'down'
 
-    # Check collisions
-    if (
-        new_head in st.session_state.snake
-        or new_head[0] < 0 or new_head[0] >= GRID_SIZE
-        or new_head[1] < 0 or new_head[1] >= GRID_SIZE
-    ):
-        st.session_state.game_over = True
-        return
+    def walk(self):
+        for i in range(self.length - 1, 0, -1):
+            self.x[i] = self.x[i - 1]
+            self.y[i] = self.y[i - 1]
 
-    st.session_state.snake.append(new_head)
+        if self.direction == 'left':
+            self.x[0] -= SIZE
+        elif self.direction == 'right':
+            self.x[0] += SIZE
+        elif self.direction == 'up':
+            self.y[0] -= SIZE
+        elif self.direction == 'down':
+            self.y[0] += SIZE
 
-    # Eat food
-    if new_head == st.session_state.food:
-        st.session_state.score += 1
-        st.session_state.food = place_food()
-    else:
-        st.session_state.snake.pop(0)
+    def draw(self):
+        for i in range(self.length):
+            self.parent_screen.blit(self.image, (self.x[i], self.y[i]))
 
-def render_grid():
-    grid = ""
-    for y in range(GRID_SIZE):
-        row = ""
-        for x in range(GRID_SIZE):
-            if (x, y) == st.session_state.food:
-                row += FOOD_EMOJI
-            elif (x, y) in st.session_state.snake:
-                row += SNAKE_EMOJI
-            else:
-                row += EMPTY_EMOJI
-        grid += row + "\n"
-    st.markdown(grid)
+    def increase_length(self):
+        self.length += 1
+        self.x.append(-1)
+        self.y.append(-1)
 
-# Title and score
-st.title("🐍 Streamlit Snake Game")
-st.write(f"**Score:** {st.session_state.score}")
+    def get_coords(self):
+        return list(zip(self.x, self.y))
 
-# Movement buttons
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    if st.button("⬆️ Up") and st.session_state.direction != "DOWN":
-        st.session_state.direction = "UP"
-with col1:
-    if st.button("⬅️ Left") and st.session_state.direction != "RIGHT":
-        st.session_state.direction = "LEFT"
-with col3:
-    if st.button("➡️ Right") and st.session_state.direction != "LEFT":
-        st.session_state.direction = "RIGHT"
-with col2:
-    if st.button("⬇️ Down") and st.session_state.direction != "UP":
-        st.session_state.direction = "DOWN"
+class Game:
+    def __init__(self):
+        pygame.init()
+        pygame.display.set_caption("Snake Game")
+        self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.bg = pygame.image.load(f"{RESOURCE_PATH}/background.jpg").convert()
+        self.bg = pygame.transform.scale(self.bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.clock = pygame.time.Clock()
+        self.snake = Snake(self.surface)
+        self.apple = Apple(self.surface)
 
-# Move snake and render grid
-if not st.session_state.game_over:
-    move_snake()
-    render_grid()
-    time.sleep(0.2)
-    st.experimental_rerun()
-else:
-    st.error("💀 Game Over!")
-    if st.button("🔄 Restart"):
-        for key in st.session_state.keys():
-            del st.session_state[key]
-        st.experimental_rerun()
+    def reset(self):
+        self.snake = Snake(self.surface)
+        self.apple = Apple(self.surface)
+
+    def is_collision(self, x1, y1, x2, y2):
+        return x1 >= x2 and x1 < x2 + SIZE and y1 >= y2 and y1 < y2 + SIZE
+
+    def render_background(self):
+        self.surface.blit(self.bg, (0, 0))
+
+    def display_score(self):
+        font = pygame.font.SysFont('arial', 30)
+        score = font.render(f"Score: {self.snake.length - 1}", True, (255, 255, 255))
+        self.surface.blit(score, (850, 10))
+
+    def play(self):
+        self.render_background()
+        self.snake.walk()
+        self.snake.draw()
+        self.apple.draw()
+        self.display_score()
+
+        # Apple Collision
+        if self.is_collision(self.snake.x[0], self.snake.y[0], self.apple.x, self.apple.y):
+            self.snake.increase_length()
+            self.apple.move(self.snake.get_coords())
+
+        # Wall Collision
+        if self.snake.x[0] < 0 or self.snake.x[0] >= SCREEN_WIDTH or self.snake.y[0] < 0 or self.snake.y[0] >= SCREEN_HEIGHT:
+            raise Exception("Wall Collision")
+
+        # Self Collision
+        for i in range(3, self.snake.length):
+            if self.is_collision(self.snake.x[0], self.snake.y[0], self.snake.x[i], self.snake.y[i]):
+                raise Exception("Self Collision")
+
+        pygame.display.flip()
+
+    def show_game_over(self):
+        self.render_background()
+        font = pygame.font.SysFont('arial', 36)
+        line1 = font.render(f"Game Over! Your score is {self.snake.length - 1}", True, (255, 255, 255))
+        self.surface.blit(line1, (200, 300))
+        line2 = font.render("Press Enter to play again or Esc to exit.", True, (255, 255, 255))
+        self.surface.blit(line2, (200, 350))
+        pygame.display.flip()
+
+    def run(self):
+        running = True
+        pause = False
+
+        while running:
+            for event in pygame.event.get():
+                if event.type == KEYDOWN:
+                    if event.key == K_ESCAPE:
+                        running = False
+                    elif event.key == K_RETURN:
+                        pause = False
+                    if not pause:
+                        if event.key == K_LEFT:
+                            self.snake.move_left()
+                        elif event.key == K_RIGHT:
+                            self.snake.move_right()
+                        elif event.key == K_UP:
+                            self.snake.move_up()
+                        elif event.key == K_DOWN:
+                            self.snake.move_down()
+                elif event.type == QUIT:
+                    running = False
+
+            try:
+                if not pause:
+                    self.play()
+            except Exception as e:
+                self.show_game_over()
+                pause = True
+                self.reset()
+
+            self.clock.tick(10)  # Control speed
+
+if __name__ == '__main__':
+    game = Game()
+    game.run()
