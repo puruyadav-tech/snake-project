@@ -1,4 +1,5 @@
-import pygame
+
+   import pygame
 import random
 from pygame.locals import *
 
@@ -6,12 +7,11 @@ from pygame.locals import *
 SIZE = 40
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 800
-RESOURCE_PATH = "/Users/puruyadav1004/Desktop/snake game project/resource"
 
 class Apple:
     def __init__(self, parent_screen):
         self.parent_screen = parent_screen
-        image = pygame.image.load(f"{RESOURCE_PATH}/apple.jpg").convert_alpha()
+        image = pygame.image.load("apple.jpg").convert_alpha()
         self.image = pygame.transform.scale(image, (SIZE, SIZE))
         self.x = SIZE * 3
         self.y = SIZE * 3
@@ -29,7 +29,7 @@ class Apple:
 class Snake:
     def __init__(self, parent_screen):
         self.parent_screen = parent_screen
-        image = pygame.image.load(f"{RESOURCE_PATH}/block.jpg").convert()
+        image = pygame.image.load("block.jpg").convert()
         self.image = pygame.transform.scale(image, (SIZE, SIZE))
         self.direction = 'down'
         self.length = 1
@@ -72,7 +72,7 @@ class Game:
         pygame.init()
         pygame.display.set_caption("Snake Game")
         self.surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.bg = pygame.image.load(f"{RESOURCE_PATH}/background.jpg").convert()
+        self.bg = pygame.image.load("background.jpg").convert()
         self.bg = pygame.transform.scale(self.bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.snake = Snake(self.surface)
@@ -161,3 +161,4 @@ class Game:
 if __name__ == '__main__':
     game = Game()
     game.run()
+
